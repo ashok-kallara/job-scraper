@@ -1,0 +1,67 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.api.internal.tasks.userinput.DefaultUserInputHandler
+import org.gradle.api.internal.tasks.userinput.DefaultUserInputReader
+import org.gradle.api.internal.tasks.userinput.UserInputHandler
+
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.internal.tasks.userinput.BuildScanUserInputHandler;
+
+ext {
+    ext {
+        groovyVersion = '2.4.8'
+        gebVersion = '2.0'
+        seleniumVersion = '3.8.1'
+        chromeDriverVersion = '2.35'
+        geckoDriverVersion = '0.16.1'
+        phantomJsVersion = '2.1.1'
+    }
+}
+
+apply plugin: "groovy"
+apply from: "gradle/osSpecificDownloads.gradle"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // In case I end up using Spock
+    compile "org.gebish:geb-spock:$gebVersion"
+    compile("org.spockframework:spock-core:1.0-groovy-2.4") {
+        exclude group: "org.codehaus.groovy"
+    }
+    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+
+    compile 'com.jameskleeh:excel-builder:0.4.0'
+
+    // If using JUnit, need to depend on geb-junit (3 or 4)
+    testCompile "org.gebish:geb-junit4:$gebVersion"
+
+    compile "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
+}
+
+test {
+    enabled = false
+}
+
+task glassDoor(type: JavaExec) {
+
+    main = 'JobScraper'
+    classpath = sourceSets.main.runtimeClasspath
+
+    systemProperty "geb.env", "chrome"
+    def chromedriverFilename = Os.isFamily(Os.FAMILY_WINDOWS) ? "chromedriver.exe" : "chromedriver"
+    systemProperty "webdriver.chrome.driver", new File(unzipChromeDriver.outputs.files.singleFile, chromedriverFilename).absolutePath
+
+    //def location = System.console().readLine('#### Location Searh keyword (e.g: Atlanta):')
+//    DefaultUserInputReader userInputHandler = ((ProjectInternal) project).getServices().get(DefaultUserInputHandler.class);
+    println "#### Location Searh keyword (e.g: Atlanta):"
+    def location = new DefaultUserInputReader().readInput()
+    println "LOCATION: ${location}"
+    systemProperty "LOCATIONSEARCH", location
+
+    println '#### Keyword Searh keyword (e.g: Application Architect):'
+    def searchKeyword = new DefaultUserInputReader().readInput()
+    println "searchKeyword: ${searchKeyword}"
+    systemProperty "KEYWORDSEARCH", searchKeyword
+}
